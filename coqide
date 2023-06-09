@@ -1,0 +1,3 @@
+#!/bin/sh
+dir=${PWD}
+exec coqide -noinit -indices-matter -type-in-type -w -notation-overridden -Q "${dir}/" MyHOTT
