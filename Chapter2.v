@@ -1,6 +1,15 @@
 (** * Chapter 2 *)
 
-Require Export MyHOTT.Chapter1. 
+Require Export MyHOTT.Chapter1.
+
+(** ** Reserved notations *)
+
+Reserved Notation "p @ q" (at level 60, right associativity).
+Reserved Notation "! p" (at level 50, left associativity).
+Reserved Notation "p # x" (at level 60, no associativity).
+Reserved Notation "f ~ g" (at level 70, no associativity).
+Reserved Notation "X ≃ Y" (at level 80, no associativity).
+
 
 (** ** Section 2.1: Types are higher groupoids *)
 
@@ -9,7 +18,7 @@ Lemma paths_refl' : ∏ {A: UU} {x y: A}, (x = y) → (y = x).
 Proof.
   intro A.
   pose (D := λ (x y: A) (p: x = y), y = x).
-  pose (d := (λ x: A, idpath x) : ∏ x: A, D x x (idpath x) ). 
+  pose (d := (λ x: A, idpath x) : ∏ x: A, D x x (idpath x) ).
   exact (paths_rect_gen D d).
 Defined.
 
@@ -108,12 +117,12 @@ Notation "p <@ α" := (paths_left_whisker p α) (at level 40).
 
 Definition horz_comp {A: UU} {x y z : A} {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
   : (p@r) = (q@s)  :=  (α @> r) @ (q <@ β).
-  
+
 Notation "α ⋆ β" := (horz_comp α β) (at level 40, left associativity).
 
 Definition horz_comp' {A: UU} {x y z : A} {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
   : (p@r) = (q@s) := (p <@ β) @ (α @> s).
-  
+
 Notation "α ⋆' β" := (horz_comp' α β) (at level 40, left associativity).
 
 Lemma horz_comp_eq  {A: UU} {x y z : A} {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
@@ -147,7 +156,7 @@ Defined.
 Theorem eckmann_hilton {A: UU} {a: A} (p q: Ω² a): p @ q = q @ p.
 Proof.
   exact (! horz_comp_trans1 p q @ horz_comp_eq p q @ horz_comp_trans2 p q).
-Defined. 
+Defined.
 
 (** ** Section 2.2: Functions are functors *)
 
@@ -238,7 +247,7 @@ Proof.
   apply idpath.
 Defined.
 
-Lemma transport_funcomp {A B: UU} (f: A → B) (P: ∏ x: B, UU) {x y: A} (p: x = y): 
+Lemma transport_funcomp {A B: UU} (f: A → B) (P: ∏ x: B, UU) {x y: A} (p: x = y):
   transport (P ∘ f) p = (transport P) (ap f p).
 Proof.
   induction p.
@@ -301,7 +310,7 @@ Proof.
   eapply paths_trans.
   apply paths_trans_assoc.
   apply (paths_trans(y:= (ap f (H x) @ H x) @  ! H x)).
-  { 
+  {
     apply (ap (λ z, z @ ! H x)).
     eapply paths_trans.
     apply paths_refl.
@@ -449,7 +458,7 @@ Defined.
 (** ** Section 2.6: Cartesian product types *)
 
 Definition prod_eq_proj {A B: UU} (x y: A × B)
-  : x = y → (pr1 x = pr1 y) × (pr2 x = pr2 y) 
+  : x = y → (pr1 x = pr1 y) × (pr2 x = pr2 y)
   := λ p, ((ap pr1 p) ,, (ap prod_pr2 p)).
 
 Definition prod_eq {A B: UU} (x y: A × B)
@@ -465,7 +474,7 @@ Proof.
   apply idpath.
 Defined.
 
-Notation "p1 × p2" := (prod_eq _ _ (p1 ,, p2)): paths_scope. 
+Notation "p1 × p2" := (prod_eq _ _ (p1 ,, p2)): paths_scope.
 
 Lemma prod_eq_qinv {A B: UU} {x y: A × B}: qinv (prod_eq_proj x y).
 Proof.
@@ -498,7 +507,7 @@ Definition prod_fun {A B A' B': UU} (g: A → A') (h: B → B')
 
 Notation "f × g" := (prod_fun f g): function_scope.
 
-Definition ap_prod {A B A' B': UU} (g: A → A') (h: B → B') {x y: A × B} 
+Definition ap_prod {A B A' B': UU} (g: A → A') (h: B → B') {x y: A × B}
                    (p: pr1 x = pr1 y) (q: pr2 x = pr2 y)
   : ap (g × h) (p × q)
     = prod_eq (prod_fun g h x) (prod_fun g h y) ( (ap g p) ,, (ap h q)).
@@ -544,7 +553,7 @@ Proof.
     cbn in q.
     induction q.
     apply idpath.
-  - induction x. 
+  - induction x.
     induction w as [a b].
     apply idpath.
 Defined.
@@ -566,12 +575,12 @@ Defined.
 
 Theorem transport_sum {A: UU} (P: A → UU) (Q: total2 P → UU) {x y: A}
                       (p: x = y) (u: P x) (z: Q (x ,, u))
-  : transport (λ x, ∑ u: P x,  Q (x ,, u)) p (u ,, z) 
+  : transport (λ x, ∑ u: P x,  Q (x ,, u)) p (u ,, z)
     = (p # u ,, transport Q (sum_eq' p (idpath (p # u))) z).
 Proof.
   induction p.
   apply idpath.
-Defined.  
+Defined.
 
 (** ** Section 2.8: The unit type *)
 
@@ -682,7 +691,3 @@ Proof.
   exists happly.
   apply funextAxiom.
 Defined.
-
-
-
-
