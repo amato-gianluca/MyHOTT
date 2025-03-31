@@ -20,7 +20,10 @@ Notation "A → B" := (A -> B)
 Notation "'λ' x .. y , t" := (fun x => .. (fun y => t) ..)
   (at level 200, x binder, y binder, right associativity).
 
-Definition idfun (A: UU): A → A := λ x: A, x.
+Definition fun_id (A: UU): A → A := λ x: A, x.
+
+(** makes [simpl], [cbn], etc. unfold [fun_id X x] but not [ fun_id X ]: *)
+Arguments fun_id _ _ /.
 
 Definition swap {A B C: UU} (g: A → B → C): B → A → C := λ (b: B) (a: A), g a b.
 
@@ -107,7 +110,7 @@ Defined.
 Definition add (m: nat): nat → nat.
 Proof.
   induction m as [|_ add_m1].
-  - exact (idfun nat).
+  - exact (fun_id nat).
   - exact (λ x, S (add_m1 x)).
 Defined.
 
@@ -306,15 +309,22 @@ Defined.
 
 (** *** Exercise 1.1 *)
 
-Definition funcomp {A B C: UU} (g: B → C) (f: A → B): A → C := λ x: A, g (f x).
+Definition fun_comp {A B C: UU} (g: B → C) (f: A → B): A → C := λ x: A, g (f x).
 
-Notation "g ∘ f" := (funcomp g f) (at level 40, left associativity)
+Notation "g ∘ f" := (fun_comp g f) (at level 40, left associativity)
   : function_scope.
 
-Theorem funcomp_assoc {A B C D: UU} (h: C → D) (g: B → C) (f: A → B)
+Theorem fun_comp_assoc {A B C D: UU} (h: C → D) (g: B → C) (f: A → B)
   : h ∘ (g ∘ f) = (h ∘ g) ∘ f.
 Proof.
   apply refl.
+Defined.
+
+Definition fun_comp_iter {A: UU} (f: A → A) (n: nat): A → A.
+Proof.
+  induction n.
+  - exact (fun_id A).
+  - exact (f ∘ IHn).
 Defined.
 
 (** *** Exercise 1.2 *)
@@ -520,7 +530,7 @@ Defined.
 Local Theorem iid {A: UU} {x y: A} (p: x = y) (C: A → UU): C x → C y.
 Proof.
   induction p.
-  apply idfun.
+  apply fun_id.
 Defined.
 
 (** *** Exercise 1.16

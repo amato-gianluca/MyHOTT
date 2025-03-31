@@ -4,8 +4,6 @@ Require Export Chapter1.
 
 (** ** Reserved notations *)
 
-Reserved Notation "p # x" (at level 60, no associativity).
-Reserved Notation "f ~ g" (at level 70, no associativity).
 Reserved Notation "X ≃ Y" (at level 80, no associativity).
 
 (** ** Section 2.1: Types are higher groupoids *)
@@ -161,19 +159,12 @@ Coercion ptype_to_type: ptype >-> Sortclass.
 
 Definition Ω (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
 
-Definition fun_iter {A: UU} (f: A → A) (n: nat) (a: A): A.
-Proof.
-  induction n.
-  - exact a.
-  - exact (f IHn).
-Defined.
-
-Goal fun_iter Ω 2 (nat,, 0) =  (refl 0 = refl 0),, refl (refl 0).
+Goal Ω (Ω (nat,, 0)) =  (refl 0 = refl 0),, refl (refl 0).
 Proof.
   apply refl.
 Qed.
 
-Notation "Ω² X" :=  (fun_iter Ω 2 X) (at level 200).
+Notation "Ω² X" :=  (Ω (Ω X)) (at level 200).
 
 (*
 Due to the use of asymmetric path_comp, this proof is feasible without
@@ -226,14 +217,14 @@ Proof.
   apply refl.
 Defined.
 
-Lemma ap_trans {A B: UU} (f: A → B) {x y z: A}  (p: x=y) (q: y=z)
+Lemma ap_pathscomp {A B: UU} (f: A → B) {x y z: A} (p: x=y) (q: y=z)
   : ap f (p @ q) = ap f p @ ap f q.
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma ap_refl {A B: UU} (f: A → B) {x y: A} (p: x=y)
+Lemma ap_pathsinv {A B: UU} (f: A → B) {x y: A} (p: x=y)
   : ap f (! p) = ! ap f p.
 Proof.
   induction p.
@@ -247,7 +238,7 @@ Proof.
   apply refl.
 Defined.
 
-Lemma ap_idfun {A: UU} {x y : A} (p: x=y): ap (idfun A) p = p.
+Lemma ap_funid {A: UU} {x y : A} (p: x = y): ap (fun_id A) p = p.
 Proof.
   induction p.
   apply refl.
@@ -255,12 +246,10 @@ Defined.
 
 (** ** Section 2.3: Type families are fibrations *)
 
-Section TypeFamilies.
-
 Definition transport {A: UU} (P: ∏ x: A, UU) {x y: A} (p: x = y): P x → P y.
 Proof.
   induction p.
-  apply idfun.
+  apply fun_id.
 Defined.
 
 Notation "p #" := (transport _ p).
@@ -279,43 +268,70 @@ Proof.
   apply refl.
 Defined.
 
-Definition apd {A: UU} {P: ∏ x: A, UU} {x y: A} (f: ∏ x: A, P x) (p: x = y)
+Definition sec {A: UU} (P: A → UU): UU := ∏ x: A, P x.
+
+Definition apd {A: UU} {P: ∏ x: A, UU} {x y: A} (f: sec P) (p: x = y)
   : p # (f x) = f y.
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Definition transportconst {A B: UU} {x y: A} (p: x = y) (b: B)
+(*
+A variant of apd (action on path of a dependent familiy) which builds the
+resulting path over the total space instead of over the target fiber.
+*)
+Definition apd_total2 {A: UU} {P: ∏ x: A, UU} {x y: A}
+  (f: ∏ x: A, P x) (p: x = y)
+  : (x,, f x) = (y,, f y).
+Proof.
+  pose (f' := λ x: A, (x,, f x)).
+  exact (ap f' p).
+Defined.
+
+(* This proof that apd_total2 is a combination of lift and apd. *)
+
+Theorem apd_total2_transport {A: UU} {P: ∏ x: A, UU} {x y: A}
+  (f: sec P) (p: x = y)
+  : apd_total2 f p =  lift (f x) p @ (ap (λ z, (y,, z)) (apd f p)).
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+Definition transport_familyconst {A B: UU} {x y: A} (p: x = y) (b: B)
   : transport (λ _: A, B) p b = b.
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma apd_transport {A B: UU} {x y: A} (f: A → B) (p: x = y)
- : apd f p = transportconst p (f x) @ ap f p.
+Lemma apd_const {A B: UU} {x y: A} (f: A → B) (p: x = y)
+ : apd f p = transport_familyconst p (f x) @ ap f p.
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma transport_trans {A: UU} {P: ∏ x: A, UU} {x y z : A} (p: x = y) (q: y = z) (u: P x)
-  : q # (p # u) = (p @ q) # u.
+Lemma transport_pathscomp {A: UU} {P: ∏ x: A, UU} {x y z : A}
+  (p: x = y) (q: y = z) (u: P x)
+  : (p @ q) # u = q # (p # u).
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma transport_funcomp {A B: UU} (f: A → B) (P: ∏ x: B, UU) {x y: A} (p: x = y):
-  transport (P ∘ f) p = (transport P) (ap f p).
+Lemma transport_familycomp {A B: UU}
+  (f: A → B) (P: ∏ x: B, UU) {x y: A} (p: x = y)
+  : transport (P ∘ f) p = (transport P) (ap f p).
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma transport_funfamily {A: UU} {P Q: ∏ x: A, UU} (f: ∏ x: A, P x → Q x) {x y: A} (p: x = y) (u: P x):
-  p # (f x u) = f y (p # u).
+Lemma transport_pointfun {A: UU} {P Q: ∏ x: A, UU}
+  (f: ∏ {x: A}, P x → Q x) {x y: A} (p: x = y) (u: P x)
+  : p # (f u) = f (p # u).
 Proof.
   induction p.
   apply refl.
@@ -323,13 +339,9 @@ Defined.
 
 (** ** Section 2.4: Homotopies and equivalences *)
 
-Section Homotopies.
-
-Definition sec {A: UU} (P: A → UU): UU := ∏ x: A, P x.
-
 Definition homot {A: UU} {P: ∏ x: A, UU} (f g: sec P): UU := ∏ x: A, f x = g x.
 
-Notation "f ~ g" := (homot f g): type_scope.
+Notation "f ~ g" := (homot f g) (at level 70, no associativity): type_scope.
 
 Lemma homot_refl {A: UU} {P: ∏ x: A, UU} (f: sec P): f ~ f.
 Proof.
@@ -337,66 +349,52 @@ Proof.
   apply refl.
 Defined.
 
-Lemma homot_symm {A: UU} {P: ∏ x: A, UU}(f g: sec P): f ~ g → g ~ f.
+Lemma homot_symm {A: UU} {P: ∏ x: A, UU} (f g: sec P): f ~ g → g ~ f.
 Proof.
   intros h x.
   exact (! (h x)).
 Defined.
 
-Lemma homot_trans {A: UU} {P: ∏ x: A, UU}(f g h: sec P): f ~ g → g ~ h → f ~ h.
+Lemma homot_trans {A: UU} {P: ∏ x: A, UU} (f g h: sec P): f ~ g → g ~ h → f ~ h.
 Proof.
   intros h1 h2 x.
   exact ((h1 x) @ (h2 x)).
 Defined.
 
-Lemma homot_nat {A B : UU} {f g: A → B} (H: f ~ g) {x y : A} (p: x = y): H x @ ap g p = ap f p @ H y.
+Lemma homot_nat {A B : UU} {f g: A → B} (H: f ~ g) {x y : A} (p: x = y)
+  : H x @ ap g p = ap f p @ H y.
 Proof.
   induction p.
   cbn.
-  apply paths_trans_rid.
+  apply paths_comp_rid.
 Defined.
 
 (* without using rewrite *)
 
-Corollary homot_nat_cor {A:  UU} (f: A → A) (H: f ~ idfun A) {x: A}: H (f x) = ap f (H x).
+Corollary homot_nat_cor {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}
+  : H (f x) = ap f (H x).
 Proof.
-  eapply paths_trans.
-  apply paths_refl.
-  apply paths_trans_rid.
-  unfold idfun.
-  eapply paths_trans.
-  apply paths_refl.
-  apply (ap _ (paths_trans_refl1 (H x))).
-  eapply paths_trans.
-  apply paths_trans_assoc.
-  apply (paths_trans(y:= (ap f (H x) @ H x) @  ! H x)).
-  {
-    apply (ap (λ z, z @ ! H x)).
-    eapply paths_trans.
-    apply paths_refl.
-    apply (ap _ (ap_idfun (H x))).
-    apply (homot_nat H).
-  }
-  eapply paths_trans.
-  apply paths_refl.
-  apply paths_trans_assoc.
-  eapply paths_trans.
-  apply (ap _ (paths_trans_refl1 _)).
-  apply paths_trans_rid.
+  pose (h0 := homot_nat H (H x)).
+  pose (h1 := (H (f x) <@ ! ap_funid (H x)) @ h0).
+  pose (h2 := h1 @> (! (H x))).
+  pose (l0 := ! paths_comp_rid (H (f x))).
+  pose (l1 := l0 @ (H (f x) <@ ! paths_comp_rinv (H x)) @ paths_comp_assoc _ _ _).
+  pose (r0 := ! paths_comp_rid (ap f (H x))).
+  pose (r1 := r0 @ (ap f (H x) <@ ! paths_comp_rinv (H x)) @ paths_comp_assoc _ _ _).
+  exact (l1 @ h2 @ ! r1).
 Defined.
 
 (* using rewrite *)
 
-Corollary homot_nat_cor' {A:  UU} (f: A → A) (H: f ~ idfun A) {x: A}: H (f x) = ap f (H x).
+Corollary homot_nat_cor' {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}: H (f x) = ap f (H x).
 Proof.
-  pose (p := homot_nat H (H x)).
-  change (idfun A x) with x in p.
-  rewrite ap_idfun in p.
-  pose (p' := p @> (! (H x))).
-  do 2 rewrite <- paths_trans_assoc in p'.
-  do 2 rewrite paths_trans_refl1 in p'.
-  do 2 rewrite paths_trans_rid in p'.
-  exact p'.
+  pose (p := homot_nat H (H x) @> ! (H x)).
+  cbn in p.
+  rewrite ap_funid in p.
+  do 2 rewrite <- paths_comp_assoc in p.
+  rewrite paths_comp_rinv in p.
+  do 2 rewrite paths_comp_rid in p.
+  exact p.
 Defined.
 
 Definition qinv {A B: UU} (f: A → B) := ∑ g: B → A, (f ∘ g ~ idfun B) × (g ∘ f ~ idfun A) .
