@@ -2,5 +2,9 @@
     "vscoq.args": [
         "-noinit", "-indices-matter"
     ],
-    "editor.rulers": [80]
+    "editor.rulers": [80],
+    "files.exclude": {
+        "*.html": true,
+        "*.css": true
+    }
 }
