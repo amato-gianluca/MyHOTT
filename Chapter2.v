@@ -10,7 +10,7 @@ Reserved Notation "X ≃ Y" (at level 80, no associativity).
 
 (** ** Section 2.1: Types are higher groupoids *)
 
-(* Lemma 2.1.1 con principio di induzione *)
+(* Lemma 2.1.1 with induction principle. *)
 Local Definition paths_inv' {A: UU} {x y: A} (p: x = y): (y = x).
 Proof.
   pose (D := λ (x y: A) (p: x = y), y = x).
@@ -18,7 +18,7 @@ Proof.
   exact (paths_rect_free D d x y p).
 Defined.
 
-(* Lemma 2.1.1 con tattiche *)
+(* Lemma 2.1.1 with tactics. *)
 Definition paths_inv {A: UU} {x y: A} (p: x = y): y = x.
 Proof.
   induction p.
@@ -27,7 +27,7 @@ Defined.
 
 Notation "! p" := (paths_inv p) (at level 50, left associativity).
 
-(* Lemma 2.1.2 with induction. *)
+(* Lemma 2.1.2 with induction principle. *)
 Local Definition paths_comp' {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
 Proof.
   pose (D := λ (x y: A) (p: x = y), ∏ (z: A) (q: y = z), x = z).
@@ -35,7 +35,10 @@ Proof.
   exact (paths_rect_free D d x y p z q).
 Defined.
 
-(* Lemma 2.1.2 with tactic. We use the asymmetric versions since proofs are much easier. *)
+(*
+Lemma 2.1.2 with tactic. We use the asymmetric versions since proofs
+are much easier.
+*)
 Definition paths_comp {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
 Proof.
   induction p.
@@ -44,8 +47,7 @@ Defined.
 
 Notation "p @ q" := (paths_comp p q) (at level 60, right associativity).
 
-(* Lemma 2.1.4 *)
-
+(* Begin Lemma 2.1.4. *)
 Lemma paths_comp_lid {A: UU} {x y: A} (p: x = y): (refl _) @ p = p.
 Proof.
   apply refl.
@@ -75,19 +77,16 @@ Proof.
   apply refl.
 Defined.
 
-Lemma paths_comp_assoc {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z): p @ (q @ r) = (p @ q) @ r.
+Lemma paths_comp_assoc {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z)
+  : p @ (q @ r) = (p @ q) @ r.
 Proof.
   induction p.
   apply refl.
 Defined.
+(* End Lemma 2.1.4. *)
 
-Definition Ω {A: UU} (a: A) := a = a.
-
-Definition Ωsquare {A: UU} (a: A) := refl a = refl a.
-
-Notation "Ω²" := Ωsquare.
-
-Definition paths_rwhisker {A: UU} {x y z: A} {p q: x = y} (α: p = q) (r: y = z): p @ r = q @ r.
+Definition paths_rwhisker {A: UU} {x y z: A} {p q: x = y} (α: p = q) (r: y = z)
+  : p @ r = q @ r.
 Proof.
   induction r.
   exact (paths_comp_rid _ @ α @ ! paths_comp_rid _).
@@ -95,18 +94,27 @@ Defined.
 
 Notation "α @> q" := (paths_rwhisker α q) (at level 40).
 
-(* Version using induction without resorting to previous lemmas. There is in sometime a choice between
-proving something by induction or resorting to previous results. *)
+(*
+Version using induction without resorting to previous lemmas. There is
+sometimes a choice between proving something by induction or resorting
+to previous results.
+*)
 
-Local Definition paths_rwhisker' {A: UU} {x y z: A} {p q: x = y} (α: p = q) (r: y = z): p @ r = q @ r.
+Local Definition paths_rwhisker' {A: UU} {x y z: A}
+  {p q: x = y} (α: p = q) (r: y = z)
+  : p @ r = q @ r.
 Proof.
   induction r, q, α.
   apply refl.
 Defined.
 
-(* The definiton of paths_lwhisker is simpler than paths_rwhisker due to the asymmetry of paths_comp. *)
+(*
+The definiton of paths_lwhisker is simpler than paths_rwhisker due to the
+asymmetry of paths_comp.
+*)
 
-Definition paths_lwhisker {A: UU} {x y z: A} {p q: x = y}(r: z = x) (α: p = q): r @ p = r @ q.
+Definition paths_lwhisker {A: UU} {x y z: A} {p q: x = y} (r: z = x) (α: p = q)
+  : r @ p = r @ q.
 Proof.
   induction r.
   exact α.
@@ -114,17 +122,21 @@ Defined.
 
 Notation "p <@ α" := (paths_lwhisker p α) (at level 40).
 
-Definition paths_horzcomp {A: UU} {x y z : A} {p q: x = y} {r s: y= z} (α: p = q) (β: r = s)
+Definition paths_horzcomp {A: UU} {x y z : A}
+  {p q: x = y} {r s: y= z} (α: p = q) (β: r = s)
   : p @ r = q @ s := (α @> r) @ (q <@ β).
 
 Notation "α ⋆ β" := (paths_horzcomp α β) (at level 40, left associativity).
 
-Definition paths_horzcomp' {A: UU} {x y z : A} {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
+Local Definition paths_horzcomp' {A: UU} {x y z : A}
+  {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
   : p @ r = q @s := (p <@ β) @ (α @> s).
 
-Notation "α ⋆' β" := (paths_horzcomp' α β) (at level 40, left associativity).
+Local Notation "α ⋆' β" := (paths_horzcomp' α β)
+  (at level 40, left associativity).
 
-Lemma paths_horzcomp_eq  {A: UU} {x y z : A} {p q: x =y} {r s: y= z} (α: p = q) (β: r = s)
+Local Lemma paths_horzcomp_eq  {A: UU} {x y z : A}
+  {p q: x = y} {r s: y= z} (α: p = q) (β: r = s)
   : α ⋆ β = α ⋆' β.
 Proof.
   induction α.
@@ -134,9 +146,41 @@ Proof.
   apply refl.
 Defined.
 
-(* Due to the use of asymmetric path_comp, this proof is feasible without resorting to stuff in Chapter 2. *)
+(**
+Pointed type and loop space hierarchy. Here universe polymorphism of
+ptype, Ω and fun_iter is essential. We define Ω as a function over
+ptypes, as in the end of Section 2.1, instead of using the ad-hoc
+definition in the middle of the same section.
+*)
 
-Lemma paths_horzcomp_trans1 {A: UU} {a: A} (α: Ω² a) (β: Ω² a)
+Definition ptype: UU := ∑ (A: UU), A.
+
+Definition ptype_to_type: ptype → UU := pr1.
+
+Coercion ptype_to_type: ptype >-> Sortclass.
+
+Definition Ω (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
+
+Definition fun_iter {A: UU} (f: A → A) (n: nat) (a: A): A.
+Proof.
+  induction n.
+  - exact a.
+  - exact (f IHn).
+Defined.
+
+Goal fun_iter Ω 2 (nat,, 0) =  (refl 0 = refl 0),, refl (refl 0).
+Proof.
+  apply refl.
+Qed.
+
+Notation "Ω² X" :=  (fun_iter Ω 2 X) (at level 200).
+
+(*
+Due to the use of asymmetric path_comp, this proof is feasible without
+resorting to stuff in Chapter 2.
+*)
+
+Lemma paths_horzcomp_trans1 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω² (A,, a))
   : α ⋆ β = α @ β.
 Proof.
   unfold "⋆".
@@ -146,7 +190,7 @@ Proof.
   - apply refl.
 Defined.
 
-Lemma paths_horzcomp_trans2 {A: UU} {a: A} (α: Ω² a) (β: Ω² a)
+Lemma paths_horzcomp_trans2 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω²(A,, a))
   : α ⋆' β = β @ α.
 Proof.
   unfold "⋆'".
@@ -156,13 +200,16 @@ Proof.
   - apply paths_comp_rid.
 Defined.
 
-Theorem eckmann_hilton {A: UU} {a: A} (p q: Ω² a): p @ q = q @ p.
+Theorem eckmann_hilton {A: UU} {a: A} (p q: Ω² (A,, a)): p @ q = q @ p.
 Proof.
-  exact (! paths_horzcomp_trans1 _ _ @ paths_horzcomp_eq _ _ @ paths_horzcomp_trans2 _ _).
+  exact (! paths_horzcomp_trans1 _ _ @ paths_horzcomp_eq _ _
+    @ paths_horzcomp_trans2 _ _).
 Defined.
 
-Lemma paths_horzcomp_comp {A: UU} {a b c d: A} {x: a = b} {y: a = b} (α: x = y) (p: b = c) (q: c = d)
-  : paths_comp_assoc x p q @ (α @> p @> q) = (α @> (p @ q)) @ paths_comp_assoc y p q.
+Lemma paths_horzcomp_comp {A: UU} {a b c d: A}
+  {x: a = b} {y: a = b} (α: x = y) (p: b = c) (q: c = d)
+  : paths_comp_assoc _ _ _ @ (α @> p @> q) =
+    (α @> (p @ q)) @ paths_comp_assoc _ _ _.
 Proof.
   induction q.
   induction p.
@@ -170,26 +217,6 @@ Proof.
   induction x.
   apply refl.
 Defined.
-
-(* Pointed type and loop space hierarchy *)
-
-Definition ptype: UU := ∑ (A: UU), A.
-
-Definition loop_space (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
-
-Definition iterated_loop_space (n: nat) (X: ptype): ptype.
-Proof.
-  induction n.
-  - exact X.
-  - exact (loop_space IHn).
-Defined.
-
-(* Here universe polymorphism of ptype, loop_space and iterated_loop_space is essential. *)
-
-Goal iterated_loop_space (S 1) (nat,, 0) =  (refl 0 = refl 0),, refl (refl 0).
-Proof.
-  apply refl.
-Qed.
 
 (** ** Section 2.2: Functions are functors *)
 
