@@ -1,5 +1,6 @@
 {
     "vscoq.args": [
-        "-noinit", "-indices-matter", "-Q", ".", "MyHOTT"
-    ]
+        "-noinit", "-indices-matter"
+    ],
+    "editor.rulers": [80]
 }
