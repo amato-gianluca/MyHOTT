@@ -1,0 +1,5 @@
+{
+    "vscoq.args": [
+        "-noinit", "-indices-matter", "-Q", ".", "MyHOTT"
+    ]
+}
