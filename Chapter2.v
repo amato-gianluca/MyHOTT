@@ -112,11 +112,6 @@ Proof.
   apply refl.
 Defined.
 
-(*
-The definiton of paths_lwhisker is simpler than paths_rwhisker due to the
-asymmetry of paths_comp.
-*)
-
 Definition paths_lwhisker {A: UU} {x y z: A} {p q: x = y} (r: z = x) (α: p = q)
   : r @ p = r @ q.
 Proof.
@@ -249,6 +244,7 @@ Defined.
 
 (** ** Section 2.2: Functions are functors *)
 
+(* This is called maponpaths in UniMath. *)
 Definition ap {A B: UU} (f: A → B) {x y: A} (p: x = y): f x = f y.
 Proof.
   induction p.
