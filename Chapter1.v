@@ -25,6 +25,7 @@ Definition fun_id (A: UU): A → A := λ x: A, x.
 (** makes [simpl], [cbn], etc. unfold [fun_id X x] but not [ fun_id X ]: *)
 Arguments fun_id _ _ /.
 
+
 Definition swap {A B C: UU} (g: A → B → C): B → A → C := λ (b: B) (a: A), g a b.
 
 (** ** Section 1.5: Product types
@@ -310,6 +311,8 @@ Defined.
 (** *** Exercise 1.1 *)
 
 Definition fun_comp {A B C: UU} (g: B → C) (f: A → B): A → C := λ x: A, g (f x).
+
+Arguments fun_comp _ _ /.
 
 Notation "g ∘ f" := (fun_comp g f) (at level 40, left associativity)
   : function_scope.

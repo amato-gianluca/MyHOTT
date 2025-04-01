@@ -438,72 +438,91 @@ Proof.
   exact p.
 Defined.
 
-Definition qinv {A B: UU} (f: A → B) := ∑ g: B → A, (f ∘ g ~ idfun B) × (g ∘ f ~ idfun A) .
+Definition qinv {A B: UU} (f: A → B)
+  := ∑ g: B → A, (f ∘ g ~ fun_id B) × (g ∘ f ~ fun_id A) .
 
-Definition qinv_to_fun {A B: UU} {f: A → B} (qinvf: qinv f) := pr1 qinvf.
+Definition qinv2fun {A B: UU} {f: A → B} (qinvf: qinv f) := pr1 qinvf.
 
-Definition qinv_proof_r {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr1 (pr2 qinvf).
+Coercion qinv2fun: qinv >-> Funclass.
 
-Definition qinv_proof_l {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr2 (pr2 qinvf).
+Definition qinv2proofr {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr1 (pr2 qinvf).
 
-Coercion qinv_to_fun: qinv >-> Funclass.
+Definition qinv2proofl {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr2 (pr2 qinvf).
 
-Definition qinv_idfun {A: UU}: qinv (idfun A).
+Definition qinv_funid (A: UU): qinv (fun_id A) := (fun_id A,, refl,, refl).
+
+Definition qinv_pathscomp1 {A: UU} {x y: A} (p: x = y) (z: A)
+  : qinv (λ q: y = z, p @ q).
 Proof.
-  exists (idfun A).
-  split; intro; apply refl.
+  exists (λ q, (!p) @ q).
+  split; intro; cbn.
+  - exact (paths_comp_assoc _ _ _
+            @ (paths_comp_rinv _ @> x0) @ paths_comp_lid _).
+  - exact (paths_comp_assoc _ _ _
+            @ (paths_comp_linv _ @> x0) @ paths_comp_lid _).
 Defined.
 
-Definition qinv_paths_trans1 {A: UU} {x y: A} (p: x=y) (z: A): qinv (λ z: y=z, p @ z).
+Definition qinv_pathscomp2 {A: UU} {x y: A} (p: x = y) (z: A)
+  : qinv (λ q: z = x, q @ p).
 Proof.
-  exists (λ z, (!p) @ z).
-  induction p.
-  split ; intro ; apply refl.
+  exists (λ q, q @ (! p)).
+  split; intro; cbn.
+  - exact (! paths_comp_assoc _ _ _
+            @ (x0 <@ paths_comp_linv _) @ paths_comp_rid _).
+  - exact (! paths_comp_assoc _ _ _
+            @ (x0 <@ paths_comp_rinv _) @ paths_comp_rid _).
 Defined.
 
-Definition qinv_paths_trans2 {A: UU} {x y: A} (p: x=y) (z: A): qinv (λ z: z=x, z @ p).
-Proof.
-  exists (λ z, z @ (! p)).
-  split ; intro ; unfold "∘".
-  - rewrite <- paths_trans_assoc.
-    rewrite paths_trans_refl2.
-    apply paths_trans_rid.
-  - rewrite <- paths_trans_assoc.
-    rewrite paths_trans_refl1.
-    apply paths_trans_rid.
-Defined.
-
-Definition qinv_transport {A: UU} (P: A → UU) {x y: A} (p: x=y): qinv (transport P p).
+Definition qinv_transport {A: UU} (P: A → UU) {x y: A} (p: x = y)
+  : qinv (transport P p).
 Proof.
   exists (transport P (! p)).
+  simpl.
   induction p.
   split ; intro; apply refl.
 Defined.
 
-Definition isequiv {A B: UU} (f: A → B)
-  := (∑ g: B → A, f ∘ g ~ idfun B) × (∑ h: B → A, h ∘ f ~ idfun A).
-
-Lemma qinv_to_isequiv {A B: UU} {f: A → B} (qinvf: qinv f): isequiv f.
+(* Vatiant of the proof using previous lemmas instead of induction *)
+Local Definition qinv_transport' {A: UU} (P: A → UU) {x y: A} (p: x = y)
+  : qinv (transport P p).
 Proof.
-  split.
-  - exists qinvf.
-    apply (qinv_proof_r qinvf).
-  - exists qinvf.
-    apply (qinv_proof_l qinvf).
+  exists (transport P (! p)).
+  split; cbn.
+  - intro y0.
+    pose (p1 := ! transport_pathscomp (! p) p y0).
+    pose (p2 := ap (λ q: y = y, q # y0) (paths_comp_linv p) ).
+    exact (p1 @ p2).
+  - intro x0.
+    pose (p1 := ! transport_pathscomp p (! p) x0).
+    pose (p2 := ap (λ q: x = x, q # x0) (paths_comp_rinv p) ).
+    exact (p1 @ p2).
 Defined.
 
-Lemma isequiv_to_qinv {A B: UU} {f: A → B} (eq: isequiv f): qinv f.
+Definition isequiv {A B: UU} (f: A → B)
+  := (∑ g: B → A, f ∘ g ~ fun_id B) × (∑ h: B → A, h ∘ f ~ fun_id A).
+
+Lemma qinv2isequiv {A B: UU} {f: A → B} (finv: qinv f): isequiv f.
+Proof.
+  split.
+  - exists finv.
+    apply (qinv2proofr finv).
+  - exists finv.
+    apply (qinv2proofl finv).
+Defined.
+
+Lemma isequiv2qinv {A B: UU} {f: A → B} (eq: isequiv f): qinv f.
 Proof.
   induction eq as [ [g α] [h β] ].
   exists g.
   split.
   - apply α.
   - set (γ := λ x: B, ! β(g x) @ ap h (α x)).
-    unfold idfun in γ.
+    cbn in γ.
     intro x.
-    unfold idfun.
     exact (γ (f x) @ β x).
 Defined.
+
+Coercion isequiv2qinv: isequiv >-> qinv.
 
 (* To be proved later *)
 
@@ -511,48 +530,49 @@ Lemma isequiv_iscontr {A B: UU} (f: A → B) (e1 e2: isequiv f): e1 = e2.
 Proof.
 Abort.
 
-Lemma isequiv_idfun (A: UU): isequiv (idfun A).
-Proof.
-  apply qinv_to_isequiv.
-  apply qinv_idfun.
-Defined.
-
-Lemma isequiv_comp {A B C: UU} {f: A → B} {g: B → C} (e1: isequiv f) (e2: isequiv g): isequiv (g ∘ f).
-Proof.
-  apply qinv_to_isequiv.
-  apply isequiv_to_qinv in e1.
-  apply isequiv_to_qinv in e2.
-  exists (e1 ∘ e2).
-  split ; intro x.
-  - pose (α := ap g (qinv_proof_r e1 (e2 x))).
-    pose (β := qinv_proof_r e2 x).
-    exact (α @ β).
-  - pose (α := ap e1 (qinv_proof_l e2 (f x))).
-    pose (β := qinv_proof_l e1 x).
-    exact (α @ β).
-Defined.
-
 Definition equiv (A B: UU) := ∑ f: A → B, isequiv f.
 
 Notation "A ≃ B" := (equiv A B).
 
-Lemma equiv_refl {A: UU}: A ≃ A.
+Definition equiv2fun {A B: UU} (e: A ≃ B): A → B := pr1 e.
+
+Definition equiv2isequiv {A B: UU} (e: A ≃ B): isequiv (pr1 e) := pr2 e.
+
+Definition isequiv2equiv {A B: UU} {f: A → B} (eq: isequiv f): A ≃ B
+  := (f,, eq).
+
+Definition equiv2qinv {A B: UU} (e: A ≃ B): qinv (pr1 e)
+  := isequiv2qinv (pr2 e).
+
+Coercion equiv2isequiv: equiv >-> isequiv.
+
+Definition qinv2equiv {A B: UU} {f: A → B} (g: qinv f): A ≃ B
+  := (f,, qinv2isequiv g).
+
+Definition equiv_refl {A: UU}: A ≃ A := qinv2equiv (qinv_funid A).
+
+Definition qinv_inv {A B: UU} {f: A → B} (g: qinv f): qinv g
+  := (f,, (qinv2proofl g,, qinv2proofr g)).
+
+Definition equiv_symm {A B: UU} (e: A ≃ B): B ≃ A
+  := qinv2equiv (qinv_inv e).
+
+Definition qinv_funcomp {A B C: UU} {f: A → B} {g: B → C}
+  (fi: qinv f) (gi: qinv g)
+  : qinv (g ∘ f).
 Proof.
-  exists (idfun A).
-  apply isequiv_idfun.
+  exists (fi ∘ gi).
+  split; intro x.
+  - pose (α := ap g (qinv2proofr fi (gi x))).
+    pose (β := qinv2proofr gi x).
+    exact (α @ β).
+  - pose (α := ap fi (qinv2proofl gi (f x))).
+    pose (β := qinv2proofl fi x).
+    exact (α @ β).
 Defined.
 
-Lemma isequiv_symm {A B: UU} (e: A ≃ B): B ≃ A.
-Proof.
-  induction e as [f finv].
-  apply isequiv_to_qinv in finv.
-  exists finv.
-  apply qinv_to_isequiv.
-  exists f.
-  split.
-  - apply (qinv_proof_l finv).
-  - apply (qinv_proof_r finv).
-Defined.
+Definition equiv_trans {A B C: UU} (e1: A ≃ B) (e2: B ≃ C): A ≃ C
+  := qinv2equiv (qinv_funcomp e1 e2).
 
 (** ** Section 2.6: Cartesian product types *)
 
