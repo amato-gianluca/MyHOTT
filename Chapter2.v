@@ -29,18 +29,21 @@ Notation "! p" := (paths_inv p) (at level 50, left associativity).
 Local Definition paths_comp' {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
 Proof.
   pose (D := λ (x y: A) (p: x = y), ∏ (z: A) (q: y = z), x = z).
-  pose (d := (λ (x: A) (z: A) (q: x = z), q) : ∏ x: A,  D x x (refl _)).
-  exact (paths_rect_free D d x y p z q).
+  refine (paths_rect_free D _  x y p z q).
+  unfold D.
+  pose (E := λ (x y : A) (p: x = y), x = y).
+  pose (e := λ (x: A), refl x).
+  exact (paths_rect_free E e).
 Defined.
 
 (*
-Lemma 2.1.2 with tactic. We use the asymmetric versions since proofs
-are much easier.
+Lemma 2.1.2 with tactic.
 *)
 Definition paths_comp {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
 Proof.
   induction p.
-  exact q.
+  induction q.
+  apply refl.
 Defined.
 
 Notation "p @ q" := (paths_comp p q) (at level 60, right associativity).
@@ -48,6 +51,7 @@ Notation "p @ q" := (paths_comp p q) (at level 60, right associativity).
 (* Begin Lemma 2.1.4. *)
 Lemma paths_comp_lid {A: UU} {x y: A} (p: x = y): (refl _) @ p = p.
 Proof.
+  induction p.
   apply refl.
 Defined.
 
@@ -79,6 +83,8 @@ Lemma paths_comp_assoc {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z)
   : p @ (q @ r) = (p @ q) @ r.
 Proof.
   induction p.
+  induction q.
+  induction r.
   apply refl.
 Defined.
 (* End Lemma 2.1.4. *)
@@ -115,7 +121,7 @@ Definition paths_lwhisker {A: UU} {x y z: A} {p q: x = y} (r: z = x) (α: p = q)
   : r @ p = r @ q.
 Proof.
   induction r.
-  exact α.
+  exact (paths_comp_lid _ @ α @ ! paths_comp_lid _).
 Defined.
 
 Notation "p <@ α" := (paths_lwhisker p α) (at level 40).
@@ -167,29 +173,61 @@ Qed.
 Notation "Ω² X" :=  (Ω (Ω X)) (at level 200).
 
 (*
-Due to the use of asymmetric path_comp, this proof is feasible without
-resorting to stuff in Chapter 2.
-*)
+Due to the use of symmetric path_comp, this proof is quite convoluted. As an
+example, this would be the proof using asymmetric paths_comp, due to the fact
+that many equalities hold definitionally.
 
-Lemma paths_horzcomp_trans1 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω² (A,, a))
-  : α ⋆ β = α @ β.
 Proof.
   unfold "⋆".
   cbn.
   eapply paths_comp.
   - apply (! paths_comp_assoc _ _ _).
   - apply refl.
+Defined
+*)
+
+Lemma paths_horzcomp_trans1 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω² (A,, a))
+  : α ⋆ β = α @ β.
+Proof.
+  unfold "⋆".
+  simpl (pr2 (Ω (A,, a))) .
+  change (α @> refl a) with (paths_comp_rid (refl a) @ α @ ! (paths_comp_rid (refl a))).
+  change (refl a <@ β) with (paths_comp_lid (refl a) @ β @ ! (paths_comp_lid (refl a))).
+  change (! paths_comp_lid (refl a)) with  (paths_comp_lid (refl a)).
+  change (! paths_comp_rid (refl a)) with  (paths_comp_rid (refl a)).
+  change (paths_comp_rid (refl a)) with (refl (refl a)).
+  change (paths_comp_lid (refl a)) with (refl (refl a)).
+  pose (res :=
+    paths_comp_assoc (refl (refl a) @ α @ refl (refl a)) (refl (refl a)) (β @ refl (refl a))
+    @ paths_comp_assoc _ _ _
+    @ paths_comp_rid _
+    @ (! paths_comp_assoc _ _ _ @> β)
+    @ (paths_comp_lid _ @> β)
+    @ (! paths_comp_assoc _ _ _ @> β)
+    @ (α <@ (paths_comp_rinv _) @> β)
+    @ ((paths_comp_rid _) @> β)
+  ).
+  exact res.
 Defined.
 
 Lemma paths_horzcomp_trans2 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω²(A,, a))
   : α ⋆' β = β @ α.
 Proof.
-  unfold "⋆'".
-  cbn.
-  eapply paths_comp.
-  - apply paths_comp_assoc.
-  - apply paths_comp_rid.
+  (* We do all the changes in a single step. *)
+  change ((refl (refl a) @ β @ refl (refl a)) @ refl (refl a) @ α @ refl (refl a) = β @ α).
+  pose (res :=
+    paths_comp_assoc (refl (refl a) @ β @ refl (refl a)) (refl (refl a)) (α @ refl (refl a))
+    @ paths_comp_assoc _ _ _
+    @ paths_comp_rid _
+    @ (! paths_comp_assoc _ _ _ @> α)
+    @ (paths_comp_lid _ @> α)
+    @ (! paths_comp_assoc _ _ _ @> α)
+    @ (β <@ (paths_comp_rinv _) @> α)
+    @ ((paths_comp_rid _) @> α)
+  ).
+  exact res.
 Defined.
+
 
 Theorem eckmann_hilton {A: UU} {a: A} (p q: Ω² (A,, a)): p @ q = q @ p.
 Proof.
@@ -221,6 +259,7 @@ Lemma ap_pathscomp {A B: UU} (f: A → B) {x y z: A} (p: x=y) (q: y=z)
   : ap f (p @ q) = ap f p @ ap f q.
 Proof.
   induction p.
+  induction q.
   apply refl.
 Defined.
 
@@ -318,6 +357,7 @@ Lemma transport_pathscomp {A: UU} {P: ∏ x: A, UU} {x y z : A}
   : (p @ q) # u = q # (p # u).
 Proof.
   induction p.
+  induction q.
   apply refl.
 Defined.
 
@@ -365,8 +405,9 @@ Lemma homot_nat {A B : UU} {f g: A → B} (H: f ~ g) {x y : A} (p: x = y)
   : H x @ ap g p = ap f p @ H y.
 Proof.
   induction p.
-  cbn.
-  apply paths_comp_rid.
+  change (ap f (refl x)) with (refl (f x)).
+  change (ap g (refl x)) with (refl (g x)).
+  exact ( paths_comp_rid (H x) @ ! paths_comp_lid (H x)).
 Defined.
 
 (* without using rewrite *)
