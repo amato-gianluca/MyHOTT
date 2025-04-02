@@ -1,22 +1,11 @@
-(** * Chapter 2 *)
+(** * Chapter 2 Homotopy type theory. *)
 
 Require Export Chapter1.
 
-(** ** Reserved notations *)
+(** ** Section 2.1: Types are higher groupoids. *)
 
-Reserved Notation "X ≃ Y" (at level 80, no associativity).
+(** *** Inverse of a path (Lemma 2.1.1 from the book). *)
 
-(** ** Section 2.1: Types are higher groupoids *)
-
-(* Lemma 2.1.1 with induction principle. *)
-Local Definition paths_inv' {A: UU} {x y: A} (p: x = y): (y = x).
-Proof.
-  pose (D := λ (x y: A) (p: x = y), y = x).
-  pose (d := (λ x: A, refl _) : ∏ x: A, D x x (refl _) ).
-  exact (paths_rect_free D d x y p).
-Defined.
-
-(* Lemma 2.1.1 with tactics. *)
 Definition paths_inv {A: UU} {x y: A} (p: x = y): y = x.
 Proof.
   induction p.
@@ -25,7 +14,34 @@ Defined.
 
 Notation "! p" := (paths_inv p) (at level 50, left associativity).
 
-(* Lemma 2.1.2 with induction principle. *)
+(** This is implemented using path induction instead of the induction tactic. *)
+
+Local Definition paths_inv' {A: UU} {x y: A} (p: x = y): (y = x).
+Proof.
+  pose (D := λ (x y: A) (p: x = y), y = x).
+  pose (d := (λ x: A, refl _) : ∏ x: A, D x x (refl _) ).
+  exact (paths_rect_free D d x y p).
+Defined.
+
+(** *** Path inversion is involutive. *)
+
+Lemma paths_inv_inv {A: UU} {x y: A} (p: x = y): ! (! p) = p.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Composition of paths (Lemma 2.1.2 from the book). *)
+
+Definition paths_comp {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
+Proof.
+  induction p.
+  induction q.
+  apply refl.
+Defined.
+
+(** This is implemented using path induction instead of the induction tactic. *)
+
 Local Definition paths_comp' {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
 Proof.
   pose (D := λ (x y: A) (p: x = y), ∏ (z: A) (q: y = z), x = z).
@@ -36,24 +52,23 @@ Proof.
   exact (paths_rect_free E e).
 Defined.
 
-(*
-Lemma 2.1.2 with tactic.
-*)
-Definition paths_comp {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
-Proof.
-  induction p.
-  induction q.
-  apply refl.
-Defined.
-
 Notation "p @ q" := (paths_comp p q) (at level 60, right associativity).
 
-(* Begin Lemma 2.1.4. *)
+(** A tacting for for simplifying proofs with path composition. *)
+
+Ltac etrans := eapply paths_comp.
+
+(** *** [refl] is the left identity for path composition.
+Since our definition of [paths_comp] is symmetric, this only holds propositionally. *)
+
 Lemma paths_comp_lid {A: UU} {x y: A} (p: x = y): (refl _) @ p = p.
 Proof.
   induction p.
   apply refl.
 Defined.
+
+(** *** [refl] is the right identity for path composition.
+Since our definition of [paths_comp] is symmetric, this only holds propositionally. *)
 
 Lemma paths_comp_rid{A: UU} {x y: A} (p: x = y): p @ (refl _) = p.
 Proof.
@@ -61,11 +76,15 @@ Proof.
   apply refl.
 Defined.
 
+(** *** [! p] is the right inverse of [p] w.r.t. path composition. *)
+
 Lemma paths_comp_rinv {A: UU} {x y: A} (p: x = y): p @ ! p = refl _.
 Proof.
   induction p.
   apply refl.
 Defined.
+
+(** *** [! p] is left right inverse of [p] w.r.t. path composition. *)
 
 Lemma paths_comp_linv {A: UU} {x y: A} (p: x = y): !p @ p = refl _.
 Proof.
@@ -73,11 +92,7 @@ Proof.
   apply refl.
 Defined.
 
-Lemma paths_inv_inv {A: UU} {x y: A} (p: x = y): !(!p) = p.
-Proof.
-  induction p.
-  apply refl.
-Defined.
+(** *** Associativity of path composition. *)
 
 Lemma paths_comp_assoc {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z)
   : p @ (q @ r) = (p @ q) @ r.
@@ -87,24 +102,36 @@ Proof.
   induction r.
   apply refl.
 Defined.
-(* End Lemma 2.1.4. *)
 
-Definition paths_rwhisker {A: UU} {x y z: A} {p q: x = y} (α: p = q) (r: y = z)
+(** A variant of the previous one, useful in the [apply] tactic. *)
+
+Lemma paths_comp_assoc' {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z)
+  : (p @ q) @ r = p @ (q @ r).
+Proof.
+  induction p.
+  induction q.
+  induction r.
+  apply refl.
+Defined.
+
+(** *** Right whiskering of a path.
+From [p = q] we get [p @ r = q @ r]. This corresponds to [pathscomp_cancel_right]
+in UniMath, and may be used to cancel the [r] in an [apply] tactic. *)
+
+Definition paths_rwhiskering {A: UU} {x y z: A} {p q: x = y} (α: p = q) (r: y = z)
   : p @ r = q @ r.
 Proof.
   induction r.
   exact (paths_comp_rid _ @ α @ ! paths_comp_rid _).
 Defined.
 
-Notation "α @> q" := (paths_rwhisker α q) (at level 40).
+Notation "α @> q" := (paths_rwhiskering α q) (at level 40).
 
-(*
-Version using induction without resorting to previous lemmas. There is
-sometimes a choice between proving something by induction or resorting
-to previous results.
-*)
+(** Version of [paths_rwhiskering] using induction without resorting to previous
+lemmas. There is often a choice between proving something by induction or
+resorting to previous results. *)
 
-Local Definition paths_rwhisker' {A: UU} {x y z: A}
+Local Definition paths_rwhiskering' {A: UU} {x y z: A}
   {p q: x = y} (α: p = q) (r: y = z)
   : p @ r = q @ r.
 Proof.
@@ -112,29 +139,40 @@ Proof.
   apply refl.
 Defined.
 
-Definition paths_lwhisker {A: UU} {x y z: A} {p q: x = y} (r: z = x) (α: p = q)
-  : r @ p = r @ q.
+(** *** Left whiskering of a path.
+From [p = q] we get [l @ p = l @ q].  This corresponds to [pathscomp_cancel_left]
+in UniMath, and may be used to cancel the [l] in an [apply] tactic. *)
+
+Definition paths_lwhiskering {A: UU} {x y z: A} {p q: x = y} (l: z = x) (α: p = q)
+  : l @ p = l @ q.
 Proof.
-  induction r.
+  induction l.
   exact (paths_comp_lid _ @ α @ ! paths_comp_lid _).
 Defined.
 
-Notation "p <@ α" := (paths_lwhisker p α) (at level 40).
+Notation "p <@ α" := (paths_lwhiskering p α) (at level 40).
+
+(** *** Horizontal composition of paths.
+From [p = q] and [r = s] we get [p @ r = q @ s]. *)
 
 Definition paths_horzcomp {A: UU} {x y z : A}
-  {p q: x = y} {r s: y= z} (α: p = q) (β: r = s)
+  {p q: x = y} {r s: y = z} (α: p = q) (β: r = s)
   : p @ r = q @ s := (α @> r) @ (q <@ β).
 
 Notation "α ⋆ β" := (paths_horzcomp α β) (at level 40, left associativity).
 
-Local Definition paths_horzcomp' {A: UU} {x y z : A}
+(** Alternative definition of horizontal composition. *)
+
+Definition paths_horzcomp' {A: UU} {x y z : A}
   {p q: x =y} {r s : y= z} (α: p = q) (β: r = s)
   : p @ r = q @s := (p <@ β) @ (α @> s).
 
-Local Notation "α ⋆' β" := (paths_horzcomp' α β)
+Notation "α ⋆' β" := (paths_horzcomp' α β)
   (at level 40, left associativity).
 
-Local Lemma paths_horzcomp_eq  {A: UU} {x y z : A}
+(** Equality of the two definitions of horizontal composition. *)
+
+Lemma paths_horzcomp_eq  {A: UU} {x y z : A}
   {p q: x = y} {r s: y= z} (α: p = q) (β: r = s)
   : α ⋆ β = α ⋆' β.
 Proof.
@@ -145,12 +183,48 @@ Proof.
   apply refl.
 Defined.
 
-(**
-Pointed type and loop space hierarchy. Here universe polymorphism of
-ptype, Ω and fun_iter is essential. We define Ω as a function over
-ptypes, as in the end of Section 2.1, instead of using the ad-hoc
-definition in the middle of the same section.
-*)
+(** *** Whiskering with  path composition. *)
+
+Lemma paths_rwhiskering_comp {A: UU} {a b c d: A} {x y: a = b} (α: x = y)
+  (p: b = c) (q: c = d)
+  : α @> (p @ q) =  paths_comp_assoc _ _ _ @ (α @> p @> q) @ paths_comp_assoc' _ _ _.
+Proof.
+  induction q.
+  induction p.
+  induction α.
+  induction x.
+  apply refl.
+Defined.
+
+Lemma paths_lwhiskering_comp {A: UU} {a b c d: A} {x y: c = d} (α: x = y)
+  (p: a = b) (q: b = c)
+  : (p @ q) <@ α  = paths_comp_assoc' _ _ _ @ p <@ (q <@ α) @ paths_comp_assoc _ _ _.
+Proof.
+  induction q.
+  induction p.
+  induction α.
+  induction x.
+  apply refl.
+Defined.
+
+(** *** Whiskering with path identity.
+These equalities holds deifinitionally. *)
+
+Goal ∏ {A: UU} {a b: A} {x y: a = b} (α: x = y),
+  α @> refl _ = paths_comp_rid _ @ α @ ! paths_comp_rid _.
+Proof.
+  intros.
+  apply refl.
+Defined.
+
+Goal ∏ {A: UU} {a b: A} {x y: a = b} (α: x = y),
+  refl _ <@ α = paths_comp_lid _ @ α @ ! paths_comp_lid _.
+Proof.
+  intros.
+  apply refl.
+Defined.
+
+(** *** Pointed type. *)
 
 Definition ptype: UU := ∑ (A: UU), A.
 
@@ -158,33 +232,31 @@ Definition ptype_to_type: ptype → UU := pr1.
 
 Coercion ptype_to_type: ptype >-> Sortclass.
 
-Definition Ω (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
+(** *** Loop space of a pointed type. *)
 
-Goal Ω (Ω (nat,, 0)) =  (refl 0 = refl 0),, refl (refl 0).
+Definition loop_space (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
+
+(** We define Ω as a function over pointed types, as at the end of Section 2.1,
+instead of using the ad-hoc definition in the middle of the same section. *)
+
+Notation "'Ω' X" := (loop_space X) (at level 35, right associativity).
+
+(** This in an example of application of the loop space. Note that, in order
+for this to work, universe polymorphism of [ptype], [loop_space]
+and fun_iter] is essential. *)
+
+Goal Ω Ω (nat,, 0) =  (refl 0 = refl 0),, refl (refl 0).
 Proof.
   apply refl.
 Qed.
 
-Notation "Ω² X" :=  (Ω (Ω X)) (at level 200).
+(** *** The Eckmann-Hilton theorem. *)
 
-(*
-Due to the use of symmetric path_comp, this proof is quite convoluted. As an
-example, this would be the proof using asymmetric paths_comp, due to the fact
-that many equalities hold definitionally.
-
-Proof.
-  unfold "⋆".
-  cbn.
-  eapply paths_comp.
-  - apply (! paths_comp_assoc _ _ _).
-  - apply refl.
-Defined
-*)
-
-Lemma paths_horzcomp_trans1 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω² (A,, a))
+Lemma paths_horzcomp_trans1 {X: ptype} (α: Ω Ω X) (β: Ω Ω X)
   : α ⋆ β = α @ β.
 Proof.
   unfold "⋆".
+  induction X as [A a].
   simpl (pr2 (Ω (A,, a))) .
   change (α @> refl a) with (paths_comp_rid (refl a) @ α @ ! (paths_comp_rid (refl a))).
   change (refl a <@ β) with (paths_comp_lid (refl a) @ β @ ! (paths_comp_lid (refl a))).
@@ -205,10 +277,50 @@ Proof.
   exact res.
 Defined.
 
-Lemma paths_horzcomp_trans2 {A: UU} {a: A} (α: Ω² (A,, a)) (β: Ω²(A,, a))
+(** Same lemma as before, but with a backward style proof. Moreover, we
+collapse all [change] tactic in a single one. *)
+
+Local Lemma paths_horzcomp_trans1' {X: ptype} (α: Ω Ω X) (β: Ω Ω X)
+  : α ⋆ β = α @ β.
+Proof.
+  induction X as [A a].
+  change ((refl (refl a) @ α @ refl (refl a)) @ refl (refl a) @ β @ refl (refl a) = α @ β).
+  etrans.
+  apply paths_comp_assoc.
+  etrans.
+  apply paths_comp_assoc.
+  etrans.
+  apply paths_comp_rid.
+  apply paths_rwhiskering.
+  etrans.
+  apply paths_comp_assoc'.
+  etrans.
+  apply paths_comp_lid.
+  etrans.
+  apply paths_comp_assoc'.
+  apply paths_comp_rid.
+Defined.
+
+(**
+Due to the use of symmetric [path_comp], the previous proofs are quite convoluted.
+As an example, this would be the same proof using an asymmetric definition  of
+[paths_comp], where many equalities hold definitionally.
+
+[[
+Proof.
+  unfold "⋆".
+  cbn.
+  eapply paths_comp.
+  - apply (! paths_comp_assoc _ _ _).
+  - apply refl.
+Defined
+]]
+*)
+
+Lemma paths_horzcomp_trans2 {X: ptype} (α: Ω Ω X) (β: Ω Ω X)
   : α ⋆' β = β @ α.
 Proof.
-  (* We do all the changes in a single step. *)
+  induction X as [A a].
   change ((refl (refl a) @ β @ refl (refl a)) @ refl (refl a) @ α @ refl (refl a) = β @ α).
   pose (res :=
     paths_comp_assoc (refl (refl a) @ β @ refl (refl a)) (refl (refl a)) (α @ refl (refl a))
@@ -223,35 +335,26 @@ Proof.
   exact res.
 Defined.
 
-
-Theorem eckmann_hilton {A: UU} {a: A} (p q: Ω² (A,, a)): p @ q = q @ p.
+Theorem eckmann_hilton {X: ptype} (p q: Ω Ω X): p @ q = q @ p.
 Proof.
   exact (! paths_horzcomp_trans1 _ _ @ paths_horzcomp_eq _ _
     @ paths_horzcomp_trans2 _ _).
 Defined.
 
-Lemma paths_horzcomp_comp {A: UU} {a b c d: A}
-  {x: a = b} {y: a = b} (α: x = y) (p: b = c) (q: c = d)
-  : paths_comp_assoc _ _ _ @ (α @> p @> q) =
-    (α @> (p @ q)) @ paths_comp_assoc _ _ _.
-Proof.
-  induction q.
-  induction p.
-  induction α.
-  induction x.
-  apply refl.
-Defined.
+(** ** Section 2.2: Functions are functors. *)
 
-(** ** Section 2.2: Functions are functors *)
+(** Action of a map on a path (or application of a function to a path).
+This is called [maponpaths] in UniMath. *)
 
-(* This is called maponpaths in UniMath. *)
 Definition ap {A B: UU} (f: A → B) {x y: A} (p: x = y): f x = f y.
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma ap_pathscomp {A B: UU} (f: A → B) {x y z: A} (p: x=y) (q: y=z)
+(** *** Action on path composition. *)
+
+Lemma ap_pathscomp {A B: UU} (f: A → B) {x y z: A} (p: x = y) (q: y = z)
   : ap f (p @ q) = ap f p @ ap f q.
 Proof.
   induction p.
@@ -259,12 +362,16 @@ Proof.
   apply refl.
 Defined.
 
-Lemma ap_pathsinv {A B: UU} (f: A → B) {x y: A} (p: x=y)
+(** *** Action on path inversion. *)
+
+Lemma ap_pathsinv {A B: UU} (f: A → B) {x y: A} (p: x = y)
   : ap f (! p) = ! ap f p.
 Proof.
   induction p.
   apply refl.
 Defined.
+
+(** *** Action of map composition. *)
 
 Lemma ap_funcomp {A B C: UU} (f: A → B) (g: B → C) {x y: A} (p: x = y)
   : ap g (ap f p) = ap (g ∘ f) p.
@@ -272,6 +379,8 @@ Proof.
   induction p.
   apply refl.
 Defined.
+
+(** *** Actionf of the identity map. *)
 
 Lemma ap_funid {A: UU} {x y : A} (p: x = y): ap (fun_id A) p = p.
 Proof.
@@ -281,7 +390,19 @@ Defined.
 
 (** ** Section 2.3: Type families are fibrations *)
 
-Definition transport {A: UU} (P: ∏ x: A, UU) {x y: A} (p: x = y): P x → P y.
+(** *** Fibration over the base A. *)
+
+Definition fib (A: UU): UU := ∏ x: A, UU.
+
+(** *** Map between fibrations. *)
+
+Definition fibmap {A: UU} (P Q: fib A): UU := ∏ x: A, P x → Q x.
+
+(** *** Transport over a fibration and along a path.
+This is also called _indiscernability of identicals_, and [transportf] on
+UniMath. *)
+
+Definition transport {A: UU} (P: fib A) {x y: A} (p: x = y): P x → P y.
 Proof.
   induction p.
   apply fun_id.
@@ -289,66 +410,9 @@ Defined.
 
 Notation "p #" := (transport _ p).
 
-Definition lift {A: UU} {P: ∏ x: A, UU} {x y: A} (u: P x) (p: x = y)
-  : (x ,, u) = (y ,,  p # u).
-Proof.
-  induction p.
-  apply refl.
-Defined.
+(** *** Transport along a path composition. *)
 
-Lemma lift_over {A: UU} {P: ∏ x: A, UU} {x y: A} (p: x = y) (u: P x)
-  : ap pr1 (lift u p) = p.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-Definition sec {A: UU} (P: A → UU): UU := ∏ x: A, P x.
-
-Definition apd {A: UU} {P: ∏ x: A, UU} {x y: A} (f: sec P) (p: x = y)
-  : p # (f x) = f y.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-(*
-A variant of apd (action on path of a dependent familiy) which builds the
-resulting path over the total space instead of over the target fiber.
-*)
-Definition apd_total2 {A: UU} {P: ∏ x: A, UU} {x y: A}
-  (f: ∏ x: A, P x) (p: x = y)
-  : (x,, f x) = (y,, f y).
-Proof.
-  pose (f' := λ x: A, (x,, f x)).
-  exact (ap f' p).
-Defined.
-
-(* This proof that apd_total2 is a combination of lift and apd. *)
-
-Theorem apd_total2_transport {A: UU} {P: ∏ x: A, UU} {x y: A}
-  (f: sec P) (p: x = y)
-  : apd_total2 f p =  lift (f x) p @ (ap (λ z, (y,, z)) (apd f p)).
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-Definition transport_familyconst {A B: UU} {x y: A} (p: x = y) (b: B)
-  : transport (λ _: A, B) p b = b.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-Lemma apd_const {A B: UU} {x y: A} (f: A → B) (p: x = y)
- : apd f p = transport_familyconst p (f x) @ ap f p.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-Lemma transport_pathscomp {A: UU} {P: ∏ x: A, UU} {x y z : A}
+Lemma transport_pathscomp {A: UU} {P: fib A} {x y z : A}
   (p: x = y) (q: y = z) (u: P x)
   : (p @ q) # u = q # (p # u).
 Proof.
@@ -357,21 +421,123 @@ Proof.
   apply refl.
 Defined.
 
-Lemma transport_familycomp {A B: UU}
-  (f: A → B) (P: ∏ x: B, UU) {x y: A} (p: x = y)
+(** *** Transport over a constant fibration. *)
+
+Definition transport_fibconst {A B: UU} {x y: A} (p: x = y) (b: B)
+  : transport (λ _, B) p b = b.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Transport over a change of base. *)
+
+Lemma transport_basechange {A B: UU} (f: A → B) (P: fib B) {x y: A} (p: x = y)
   : transport (P ∘ f) p = (transport P) (ap f p).
 Proof.
   induction p.
   apply refl.
 Defined.
 
-Lemma transport_pointfun {A: UU} {P Q: ∏ x: A, UU}
-  (f: ∏ {x: A}, P x → Q x) {x y: A} (p: x = y) (u: P x)
-  : p # (f u) = f (p # u).
+(** *** Transport over a map of fibrations.  *)
+
+Lemma transport_fibmap {A: UU} {P Q: fib A} (f: fibmap P Q)
+  {x y: A} (p: x = y) (u: P x)
+  : p # (f _ u) = f _ (p # u).
 Proof.
   induction p.
   apply refl.
 Defined.
+
+(** *** Lift a path from the base to the total space of a fibration. *)
+
+Definition lift {A: UU} {P: fib A} {x y: A} (u: P x) (p: x = y)
+  : (x ,, u) = (y ,,  p # u).
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** The lifted path lies over the base path. *)
+
+Lemma lift_over {A: UU} {P: ∏ x: A, UU} {x y: A} (p: x = y) (u: P x)
+  : ap pr1 (lift u p) = p.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Section of a fibration. *)
+
+Definition sec {A: UU} (P: fib A): UU := ∏ x: A, P x.
+
+(** *** Action of a section of a fibration on a path. *)
+
+Definition apd {A: UU} {P: fib A} {x y: A} (f: sec P) (p: x = y)
+  : p # (f x) = f y.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Action on path composition. *)
+
+Lemma apd_pathscomp {A: UU} (P: fib A) {x y z: A} (f: sec P)
+  (p: x = y) (q: y = z)
+ : apd f (p @ q) = (transport_pathscomp p q (f x)) @ ap (q #) (apd f p) @ apd f q.
+Proof.
+  induction p.
+  induction q.
+  apply refl.
+Defined.
+
+(** *** Action of a section of a constant fibration. *)
+
+Lemma apd_fibconst {A B: UU} {x y: A} (f: A → B) (p: x = y)
+ : apd f p = transport_fibconst p (f x) @ ap f p.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Action of a section of a fibration with a change of base. *)
+
+Lemma apd_changebase {A B: UU} (f: A → B) (P: fib B) {x y: A} (g: sec P)
+  (p: x = y)
+  : apd (g ∘ f) p = (ap (λ T, T (g (f x))) (transport_basechange f P p)) @ apd g (ap f p).
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(*
+Lemma apd_fibmap {A: UU} (P Q: fib A) (f: sec P) (g: fibmap P Q) {x y: A} (p: x = y)
+  : apd (λ x, g _ (f (x))) p = .
+Proof.
+  induction p.
+  apply refl.
+Defined.
+*)
+
+(** A variant of [apd] which builds the resulting path over the total space
+instead of over the target fiber. *)
+
+Definition apd_total2 {A: UU} {P: fib A} {x y: A} (f: sec P) (p: x = y)
+  : (x,, f x) = (y,, f y).
+Proof.
+  pose (f' := λ x: A, (x,, f x)).
+  exact (ap f' p).
+Defined.
+
+(** [apd_total2] is a combination of [lift] and [apd]. *)
+
+Theorem apd_total2_transport {A: UU} {P: fib A} {x y: A} (f: sec P) (p: x = y)
+  : apd_total2 f p =  lift (f x) p @ (ap (λ z, (y,, z)) (apd f p)).
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
 
 (** ** Section 2.4: Homotopies and equivalences *)
 
@@ -528,7 +694,7 @@ Abort.
 
 Definition equiv (A B: UU) := ∑ f: A → B, isequiv f.
 
-Notation "A ≃ B" := (equiv A B).
+Notation "A ≃ B" := (equiv A B) (at level 80, no associativity).
 
 Definition equiv2fun {A B: UU} (e: A ≃ B): A → B := pr1 e.
 

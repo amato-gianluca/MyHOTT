@@ -137,7 +137,6 @@ Defined.
 Definition neg (A: UU) := A → empty : UU.
 
 Notation "¬ A" := (neg A) (at level 35, right associativity) : type_scope.
-Notation "¬¬ A" := (¬ (¬ A)) (at level 35, right associativity) : type_scope.
 
 (** Some logic proofs *)
 
@@ -309,7 +308,8 @@ Defined.
 
 (** *** Exercise 1.1 *)
 
-Definition fun_comp {A B C: UU} (g: B → C) (f: A → B): A → C := λ x: A, g (f x).
+Definition fun_comp {A B: UU} {P: ∏ x: B, UU} (g: ∏ x: B, P x) (f: A → B)
+  : ∏ x: A, P (f x) := λ x: A, g (f x).
 
 Arguments fun_comp _ _ /.
 
