@@ -343,6 +343,15 @@ Defined.
 
 (** ** Section 2.2: Functions are functors. *)
 
+(** *** Map between fibrations over the same base. *)
+
+Definition fibmap {A: UU} (P Q: fib A): UU := ∏ x: A, P x → Q x.
+
+(** *** Composition of a section and a map of fibrations. *)
+
+Definition fibcomp {A: UU} {P Q: fib A} (α: fibmap P Q) (f: sec P)
+  : sec Q := λ x, α _ (f x).
+
 (** Action of a map on a path (or application of a function to a path).
 This is called [maponpaths] in UniMath. *)
 
@@ -390,10 +399,6 @@ Defined.
 
 (** ** Section 2.3: Type families are fibrations. *)
 
-(** *** Map between fibrations over the same base. *)
-
-Definition fibmap {A: UU} (P Q: fib A): UU := ∏ x: A, P x → Q x.
-
 (** *** Transport over a fibration and along a path.
 This is also called _indiscernability of identicals_, and [transportf] on
 UniMath. *)
@@ -429,7 +434,8 @@ Defined.
 (** *** Transport over a change of base. *)
 
 Lemma transport_basechange {A B: UU} (f: A → B) (P: fib B) {x y: A} (p: x = y)
-  : transport (P ∘ f) p = (transport P) (ap f p).
+  (u: P (f x))
+  : transport (P ∘ f) p u = (transport P) (ap f p) u.
 Proof.
   induction p.
   apply refl.
@@ -496,18 +502,18 @@ Defined.
 
 Lemma apd_changebase {A B: UU} (f: A → B) (P: fib B) {x y: A} (g: sec P)
   (p: x = y)
-  : apd (g ∘ f) p = (ap (λ T, T (g (f x))) (transport_basechange f P p)) @ apd g (ap f p).
+  : apd (g ∘ f) p = transport_basechange f P p (g (f x)) @ apd g (ap f p).
 Proof.
   induction p.
   apply refl.
 Defined.
 
-(* Lemma apd_fibmap {A: UU} {P Q: fib A} (g: fibmap P Q) (f: sec P) {x y: A} (p: x = y)
-  : apd (λ x, g _ (f (x))) p =
+Lemma apd_fibmap {A: UU} {P Q: fib A} (g: fibmap P Q) (f: sec P) {x y: A} (p: x = y)
+  : apd (fibcomp g f) p = transport_fibmap g p (f x) @ ap (g _) (apd f p).
 Proof.
   induction p.
   apply refl.
-Defined. *)
+Defined.
 
 (** A variant of [apd] which builds the resulting path over the total space
 instead of over the target fiber. *)
@@ -528,30 +534,33 @@ Proof.
   apply refl.
 Defined.
 
-
 (** ** Section 2.4: Homotopies and equivalences *)
 
-Definition homot {A: UU} {P: ∏ x: A, UU} (f g: sec P): UU := ∏ x: A, f x = g x.
+Definition homot {A: UU} {P: fib A} (f g: sec P): UU := ∏ x: A, f x = g x.
 
 Notation "f ~ g" := (homot f g) (at level 70, no associativity): type_scope.
 
-Lemma homot_refl {A: UU} {P: ∏ x: A, UU} (f: sec P): f ~ f.
+(** *** Homotopies are equivalence relations. *)
+
+Lemma homot_refl {A: UU} {P: fib A} (f: sec P): f ~ f.
 Proof.
   intro x.
   apply refl.
 Defined.
 
-Lemma homot_symm {A: UU} {P: ∏ x: A, UU} (f g: sec P): f ~ g → g ~ f.
+Lemma homot_symm {A: UU} {P: fib A} (f g: sec P): f ~ g → g ~ f.
 Proof.
   intros h x.
   exact (! (h x)).
 Defined.
 
-Lemma homot_trans {A: UU} {P: ∏ x: A, UU} (f g h: sec P): f ~ g → g ~ h → f ~ h.
+Lemma homot_trans {A: UU} {P: fib A} (f g h: sec P): f ~ g → g ~ h → f ~ h.
 Proof.
   intros h1 h2 x.
   exact ((h1 x) @ (h2 x)).
 Defined.
+
+(** *** Homotopies are natural transformations. *)
 
 Lemma homot_nat {A B : UU} {f g: A → B} (H: f ~ g) {x y : A} (p: x = y)
   : H x @ ap g p = ap f p @ H y.
@@ -561,8 +570,6 @@ Proof.
   change (ap g (refl x)) with (refl (g x)).
   exact ( path_comp_rid (H x) @ ! path_comp_lid (H x)).
 Defined.
-
-(* without using rewrite *)
 
 Corollary homot_nat_cor {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}
   : H (f x) = ap f (H x).
@@ -577,9 +584,9 @@ Proof.
   exact (l1 @ h2 @ ! r1).
 Defined.
 
-(* using rewrite *)
+(** Variant of the corollary using rewrite. *)
 
-Corollary homot_nat_cor' {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}: H (f x) = ap f (H x).
+Local Corollary homot_nat_cor' {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}: H (f x) = ap f (H x).
 Proof.
   pose (p := homot_nat H (H x) @> ! (H x)).
   cbn in p.
@@ -589,6 +596,8 @@ Proof.
   do 2 rewrite path_comp_rid in p.
   exact p.
 Defined.
+
+(** *** Quasi-inverse of a function. *)
 
 Definition qinv {A B: UU} (f: A → B)
   := ∑ g: B → A, (f ∘ g ~ fun_id B) × (g ∘ f ~ fun_id A) .
@@ -601,7 +610,30 @@ Definition qinv2proofr {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr1 (pr2 qinvf
 
 Definition qinv2proofl {A B: UU} {f: A → B} (qinvf: qinv f) :=  pr2 (pr2 qinvf).
 
+(** *** Quasi-inverse of identity and function composition. *)
+
 Definition qinv_funid (A: UU): qinv (fun_id A) := (fun_id A,, refl,, refl).
+
+Definition qinv_funcomp {A B C: UU} {f: A → B} {g: B → C}
+  (fi: qinv f) (gi: qinv g)
+  : qinv (g ∘ f).
+Proof.
+  exists (fi ∘ gi).
+  split; intro x.
+  - pose (α := ap g (qinv2proofr fi (gi x))).
+    pose (β := qinv2proofr gi x).
+    exact (α @ β).
+  - pose (α := ap fi (qinv2proofl gi (f x))).
+    pose (β := qinv2proofl fi x).
+    exact (α @ β).
+Defined.
+
+(** *** Quasi-inverse of a quasi-inverse *)
+
+Definition qinv_inv {A B: UU} {f: A → B} (g: qinv f): qinv g
+  := (f,, (qinv2proofl g,, qinv2proofr g)).
+
+(** *** Quasi-inverse of the path composition functions. *)
 
 Definition qinv_pathcomp1 {A: UU} {x y: A} (p: x = y) (z: A)
   : qinv (λ q: y = z, p @ q).
@@ -625,6 +657,8 @@ Proof.
             @ (x0 <@ path_comp_rinv _) @ path_comp_rid _).
 Defined.
 
+(** *** Quasi-inverse of the transport. *)
+
 Definition qinv_transport {A: UU} (P: A → UU) {x y: A} (p: x = y)
   : qinv (transport P p).
 Proof.
@@ -634,7 +668,8 @@ Proof.
   split ; intro; apply refl.
 Defined.
 
-(* Vatiant of the proof using previous lemmas instead of induction *)
+(** Variant of the previous proof using previous lemmas instead of induction. *)
+
 Local Definition qinv_transport' {A: UU} (P: A → UU) {x y: A} (p: x = y)
   : qinv (transport P p).
 Proof.
@@ -650,8 +685,12 @@ Proof.
     exact (p1 @ p2).
 Defined.
 
+(** *** Property of a function being an equivalence. *)
+
 Definition isequiv {A B: UU} (f: A → B)
   := (∑ g: B → A, f ∘ g ~ fun_id B) × (∑ h: B → A, h ∘ f ~ fun_id A).
+
+(** *** A quasi-inverse induces an equivalence. *)
 
 Lemma qinv2isequiv {A B: UU} {f: A → B} (finv: qinv f): isequiv f.
 Proof.
@@ -661,6 +700,8 @@ Proof.
   - exists finv.
     apply (qinv2proofl finv).
 Defined.
+
+(** An equivalence induces a quasi-inverse. *)
 
 Lemma isequiv2qinv {A B: UU} {f: A → B} (eq: isequiv f): qinv f.
 Proof.
@@ -676,11 +717,15 @@ Defined.
 
 Coercion isequiv2qinv: isequiv >-> qinv.
 
-(* To be proved later *)
+(** *** Being an equivalence is a property.
+We will prove this later, after we introduce the relevant concepts. *)
 
 Lemma isequiv_iscontr {A B: UU} (f: A → B) (e1 e2: isequiv f): e1 = e2.
 Proof.
 Abort.
+
+(** *** Equivalence between types.
+We also provude related projections, coercions and constructors. *)
 
 Definition equiv (A B: UU) := ∑ f: A → B, isequiv f.
 
@@ -701,27 +746,12 @@ Coercion equiv2isequiv: equiv >-> isequiv.
 Definition qinv2equiv {A B: UU} {f: A → B} (g: qinv f): A ≃ B
   := (f,, qinv2isequiv g).
 
-Definition equiv_refl {A: UU}: A ≃ A := qinv2equiv (qinv_funid A).
+(** *** Equivalence between types is an equivalence relation. *)
 
-Definition qinv_inv {A B: UU} {f: A → B} (g: qinv f): qinv g
-  := (f,, (qinv2proofl g,, qinv2proofr g)).
+Definition equiv_refl {A: UU}: A ≃ A := qinv2equiv (qinv_funid A).
 
 Definition equiv_symm {A B: UU} (e: A ≃ B): B ≃ A
   := qinv2equiv (qinv_inv e).
-
-Definition qinv_funcomp {A B C: UU} {f: A → B} {g: B → C}
-  (fi: qinv f) (gi: qinv g)
-  : qinv (g ∘ f).
-Proof.
-  exists (fi ∘ gi).
-  split; intro x.
-  - pose (α := ap g (qinv2proofr fi (gi x))).
-    pose (β := qinv2proofr gi x).
-    exact (α @ β).
-  - pose (α := ap fi (qinv2proofl gi (f x))).
-    pose (β := qinv2proofl fi x).
-    exact (α @ β).
-Defined.
 
 Definition equiv_trans {A B C: UU} (e1: A ≃ B) (e2: B ≃ C): A ≃ C
   := qinv2equiv (qinv_funcomp e1 e2).

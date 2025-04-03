@@ -10,7 +10,7 @@ Notation UU := Type.
 
 (** ** Section 1.4: Dependent function types. *)
 
-(** *** Notations for (dependent) functions. *)
+(** *** Functions and dependent functions. *)
 
 Notation "∏ x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity) : type_scope.
@@ -41,9 +41,9 @@ Definition fib (A: UU): UU := ∏ x: A, UU.
 Definition sec {A: UU} (P: fib A): UU := ∏ x: A, P x.
 
 (** *** Composition of a function and a section.
-It also work for composition of two functions. *)
+It also work for the composition of two functions. *)
 
-Definition fun_comp {A B: UU} {P: ∏ x: B, UU} (g: ∏ x: B, P x) (f: A → B)
+Definition fun_comp {A B: UU} {P: fib B} (g: sec P) (f: A → B)
   : ∏ x: A, P (f x) := λ x: A, g (f x).
 
 Arguments fun_comp _ _ _/.
@@ -78,8 +78,6 @@ Arguments fib_total_rect {_ _}.
 
 Arguments tpair {_ _}.
 
-(** *** Notations for dependent pair. *)
-
 Notation "∑ x .. y , P" := (fib_total (λ x, .. (fib_total (λ y, P)) ..))
   (at level 200, x binder, y binder, right associativity) : type_scope.
 
@@ -89,7 +87,7 @@ Notation "A × B" := (∑ (_: A), B)
 Notation "x ,, y" := (tpair x y)
   (at level 60, right associativity).
 
-(** *** Projections for dependent pair. *)
+(** *** Projections for a dependent pair. *)
 
 Definition pr1 {A: UU} {B: fib A}
   : (∑ a, B a) → A := fib_total_rect (λ _, A) (λ a b, a).
@@ -246,7 +244,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** The free path type- *)
+(** *** The free path type. *)
 
 Inductive path_free {A: UU}: A → A → UU :=
   refl_free (a: A): path_free a a.
