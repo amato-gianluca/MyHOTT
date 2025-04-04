@@ -23,14 +23,6 @@ Proof.
   exact (path_rect_free D d x y p).
 Defined.
 
-(** *** Path inversion is involutive. *)
-
-Lemma path_inv_inv {A: UU} {x y: A} (p: x = y): ! (! p) = p.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
 (** *** Composition of paths (Lemma 2.1.2 from the book). *)
 
 Definition path_comp {A: UU} {x y z: A} (p: x = y) (q: y = z): x = z.
@@ -59,7 +51,8 @@ Notation "p @ q" := (path_comp p q) (at level 60, right associativity).
 Ltac etrans := eapply path_comp.
 
 (** *** [refl] is the left identity for path composition.
-Since our definition of [path_comp] is symmetric, this only holds propositionally. *)
+Since our definition of [path_comp] is symmetric, this only holds propositionally.
+This is part of Lemma 2.1.4. *)
 
 Lemma path_comp_lid {A: UU} {x y: A} (p: x = y): (refl _) @ p = p.
 Proof.
@@ -68,7 +61,8 @@ Proof.
 Defined.
 
 (** *** [refl] is the right identity for path composition.
-Since our definition of [path_comp] is symmetric, this only holds propositionally. *)
+Since our definition of [path_comp] is symmetric, this only holds propositionally.
+This is part of Lemma 2.1.4. *)
 
 Lemma path_comp_rid{A: UU} {x y: A} (p: x = y): p @ (refl _) = p.
 Proof.
@@ -76,7 +70,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** [! p] is the right inverse of [p] w.r.t. path composition. *)
+(** *** [! p] is the right inverse of [p] w.r.t. path composition.
+This is part of Lemma 2.1.4. *)
 
 Lemma path_comp_rinv {A: UU} {x y: A} (p: x = y): p @ ! p = refl _.
 Proof.
@@ -84,7 +79,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** [! p] is left right inverse of [p] w.r.t. path composition. *)
+(** *** [! p] is left right inverse of [p] w.r.t. path composition.
+This is part of Lemma 2.1.4. *)
 
 Lemma path_comp_linv {A: UU} {x y: A} (p: x = y): !p @ p = refl _.
 Proof.
@@ -92,7 +88,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Associativity of path composition. *)
+(** *** Associativity of path composition.
+This is part of Lemma 2.1.4. *)
 
 Lemma path_comp_assoc {A: UU} {w x y z: A} (p: w = x) (q: x = y) (r: y = z)
   : p @ (q @ r) = (p @ q) @ r.
@@ -111,6 +108,15 @@ Proof.
   induction p.
   induction q.
   induction r.
+  apply refl.
+Defined.
+
+(** *** Path inversion is involutive.
+This is part of Lemma 2.1.4. *)
+
+Lemma path_inv_inv {A: UU} {x y: A} (p: x = y): ! (! p) = p.
+Proof.
+  induction p.
   apply refl.
 Defined.
 
@@ -224,7 +230,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Pointed type. *)
+(** *** Pointed type (Definition 2.1.7 from the book). *)
 
 Definition ptype: UU := ∑ (A: UU), A.
 
@@ -232,7 +238,7 @@ Definition ptype_to_type: ptype → UU := pr1.
 
 Coercion ptype_to_type: ptype >-> Sortclass.
 
-(** *** Loop space of a pointed type. *)
+(** *** Loop space of a pointed type (Definition 2.1.8 from the book). *)
 
 Definition loop_space (X: ptype): ptype := ((pr2 X = pr2 X) ,, refl (pr2 X)).
 
@@ -250,7 +256,7 @@ Proof.
   apply refl.
 Qed.
 
-(** *** The Eckmann-Hilton theorem. *)
+(** *** The Eckmann-Hilton theorem (Lemma 2.1.6 from the book). *)
 
 Lemma path_horzcomp_trans1 {X: ptype} (α: Ω Ω X) (β: Ω Ω X)
   : α ⋆ β = α @ β.
@@ -352,7 +358,7 @@ Definition fibmap {A: UU} (P Q: fib A): UU := ∏ x: A, P x → Q x.
 Definition fibcomp {A: UU} {P Q: fib A} (α: fibmap P Q) (f: sec P)
   : sec Q := λ x, α _ (f x).
 
-(** Action of a map on a path (or application of a function to a path).
+(** *** Action of a map on a path (Lemma 2.2.1 from the book).
 This is called [maponpaths] in UniMath. *)
 
 Definition ap {A B: UU} (f: A → B) {x y: A} (p: x = y): f x = f y.
@@ -361,7 +367,13 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Action on path composition. *)
+Goal ∏ {A B: UU} (f: A → B) {x: A}, ap f (refl x) = refl (f x).
+Proof.
+  intros.
+  apply refl.
+Defined.
+
+(** *** Action on path composition (part of Lemma 2.2.2 from the book). *)
 
 Lemma ap_pathcomp {A B: UU} (f: A → B) {x y z: A} (p: x = y) (q: y = z)
   : ap f (p @ q) = ap f p @ ap f q.
@@ -371,7 +383,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Action on path inversion. *)
+(** *** Action on path inversion (part of Lemma 2.2.2 from the book). *)
 
 Lemma ap_pathinv {A B: UU} (f: A → B) {x y: A} (p: x = y)
   : ap f (! p) = ! ap f p.
@@ -380,7 +392,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Action of map composition. *)
+(** *** Action of map composition (part of Lemma 2.2.2 from the book). *)
 
 Lemma ap_funcomp {A B C: UU} (f: A → B) (g: B → C) {x y: A} (p: x = y)
   : ap g (ap f p) = ap (g ∘ f) p.
@@ -389,7 +401,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Actionf of the identity map. *)
+(** *** Actionf of the identity map (part of Lemma 2.2.2 from the book). *)
 
 Lemma ap_funid {A: UU} {x y : A} (p: x = y): ap (fun_id A) p = p.
 Proof.
@@ -399,7 +411,7 @@ Defined.
 
 (** ** Section 2.3: Type families are fibrations. *)
 
-(** *** Transport over a fibration and along a path.
+(** *** Transport over a fibration and along a path (Lemma 2.3.1 from the book).
 This is also called _indiscernability of identicals_, and [transportf] on
 UniMath. *)
 
@@ -411,7 +423,16 @@ Defined.
 
 Notation "p #" := (transport _ p).
 
-(** *** Transport along a path composition. *)
+(** *** Transport over a constant fibration (Lemma 2.3.5 from the book). *)
+
+Definition transport_fibconst {A B: UU} {x y: A} (p: x = y) (b: B)
+  : transport (λ _, B) p b = b.
+Proof.
+  induction p.
+  apply refl.
+Defined.
+
+(** *** Transport along a path composition (Lemma 2.3.9 from the book). *)
 
 Lemma transport_pathcomp {A: UU} {P: fib A} {x y z : A}
   (p: x = y) (q: y = z) (u: P x)
@@ -422,16 +443,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Transport over a constant fibration. *)
-
-Definition transport_fibconst {A B: UU} {x y: A} (p: x = y) (b: B)
-  : transport (λ _, B) p b = b.
-Proof.
-  induction p.
-  apply refl.
-Defined.
-
-(** *** Transport over a change of base. *)
+(** *** Transport over a change of base (Lemma 2.3.10 from the book).*)
 
 Lemma transport_basechange {A B: UU} (f: A → B) (P: fib B) {x y: A} (p: x = y)
   (u: P (f x))
@@ -441,7 +453,7 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Transport over a map of fibrations.  *)
+(** *** Transport over a map of fibrations (Lemma 2.3.11 from the book).  *)
 
 Lemma transport_fibmap {A: UU} {P Q: fib A} (f: fibmap P Q)
   {x y: A} (p: x = y) (u: P x)
@@ -451,7 +463,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Lift a path from the base to the total space of a fibration. *)
+(** *** Lift a path from the base to the total space of a fibration (Lemma
+2.3.2 from the book). *)
 
 Definition lift {A: UU} {P: fib A} {x y: A} (u: P x) (p: x = y)
   : (x ,, u) = (y ,,  p # u).
@@ -460,8 +473,6 @@ Proof.
   apply refl.
 Defined.
 
-(** *** The lifted path lies over the base path. *)
-
 Lemma lift_over {A: UU} {P: ∏ x: A, UU} {x y: A} (p: x = y) (u: P x)
   : ap pr1 (lift u p) = p.
 Proof.
@@ -469,7 +480,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Action of a section of a fibration on a path. *)
+(** *** Action of a section of a fibration on a path (Lemma 2.3.4 from the
+book). *)
 
 Definition apd {A: UU} {P: fib A} {x y: A} (f: sec P) (p: x = y)
   : p # (f x) = f y.
@@ -489,7 +501,8 @@ Proof.
   apply refl.
 Defined.
 
-(** *** Action of a section of a constant fibration. *)
+(** *** Action of a section of a constant fibration (Lemma 2.3.8 from the
+book). *)
 
 Lemma apd_fibconst {A B: UU} {x y: A} (f: A → B) (p: x = y)
  : apd f p = transport_fibconst p (f x) @ ap f p.
@@ -536,11 +549,13 @@ Defined.
 
 (** ** Section 2.4: Homotopies and equivalences *)
 
+(** *** Definition of homotopy (Definition 2.4.1 from the book). *)
+
 Definition homot {A: UU} {P: fib A} (f g: sec P): UU := ∏ x: A, f x = g x.
 
 Notation "f ~ g" := (homot f g) (at level 70, no associativity): type_scope.
 
-(** *** Homotopies are equivalence relations. *)
+(** *** Homotopies are equivalence relations (Lemma 2.4.2 from the book). *)
 
 Lemma homot_refl {A: UU} {P: fib A} (f: sec P): f ~ f.
 Proof.
@@ -560,7 +575,7 @@ Proof.
   exact ((h1 x) @ (h2 x)).
 Defined.
 
-(** *** Homotopies are natural transformations. *)
+(** *** Homotopies are natural transformations (Lemma 2.4.3 from the book).*)
 
 Lemma homot_nat {A B : UU} {f g: A → B} (H: f ~ g) {x y : A} (p: x = y)
   : H x @ ap g p = ap f p @ H y.
@@ -571,6 +586,7 @@ Proof.
   exact ( path_comp_rid (H x) @ ! path_comp_lid (H x)).
 Defined.
 
+(** A corollary (Corollary 2.4.4 from the book).*)
 Corollary homot_nat_cor {A:  UU} (f: A → A) (H: f ~ fun_id A) {x: A}
   : H (f x) = ap f (H x).
 Proof.
@@ -597,7 +613,7 @@ Proof.
   exact p.
 Defined.
 
-(** *** Quasi-inverse of a function. *)
+(** *** Quasi-inverse of a function (Definition 2.4.6 from the book). *)
 
 Definition qinv {A B: UU} (f: A → B)
   := ∑ g: B → A, (f ∘ g ~ fun_id B) × (g ∘ f ~ fun_id A) .
@@ -725,7 +741,7 @@ Proof.
 Abort.
 
 (** *** Equivalence between types.
-We also provude related projections, coercions and constructors. *)
+We also provide related projections, coercions and constructors. *)
 
 Definition equiv (A B: UU) := ∑ f: A → B, isequiv f.
 
@@ -746,7 +762,8 @@ Coercion equiv2isequiv: equiv >-> isequiv.
 Definition qinv2equiv {A B: UU} {f: A → B} (g: qinv f): A ≃ B
   := (f,, qinv2isequiv g).
 
-(** *** Equivalence between types is an equivalence relation. *)
+(** *** Equivalence between types is an equivalence relation (Lemma 2.4.12 from
+the book). *)
 
 Definition equiv_refl {A: UU}: A ≃ A := qinv2equiv (qinv_funid A).
 
@@ -756,11 +773,13 @@ Definition equiv_symm {A B: UU} (e: A ≃ B): B ≃ A
 Definition equiv_trans {A B C: UU} (e1: A ≃ B) (e2: B ≃ C): A ≃ C
   := qinv2equiv (qinv_funcomp e1 e2).
 
-(** ** Section 2.6: Cartesian product types *)
+(** ** Section 2.6: Cartesian product types. *)
+
+(** *** Paths between cartesian products (Theorem 2.6.2 from the book). *)
 
 Definition prod_eq_proj {A B: UU} (x y: A × B)
   : x = y → (pr1 x = pr1 y) × (pr2 x = pr2 y)
-  := λ p, ((ap pr1 p) ,, (ap prod_pr2 p)).
+  := λ p, ((ap pr1 p) ,, (ap (pr2: A × B → B) p)).
 
 Definition prod_eq {A B: UU} (x y: A × B)
   : (pr1 x = pr1 y) × (pr2 x = pr2 y) → x = y.
@@ -774,8 +793,6 @@ Proof.
   induction p2.
   apply refl.
 Defined.
-
-Notation "p1 × p2" := (prod_eq _ _ (p1 ,, p2)): paths_scope.
 
 Lemma prod_eq_qinv {A B: UU} {x y: A × B}: qinv (prod_eq_proj x y).
 Proof.
@@ -794,6 +811,35 @@ Proof.
     induction x.
     apply refl.
 Defined.
+
+Definition prod_eq2 {A B: UU} {x x': A} {y y': B}
+  : x = x' → y = y' → (x,, y) = (x',, y').
+Proof.
+  intros p1 p2.
+  induction p1.
+  induction p2.
+  apply refl.
+Defined.
+
+Declare Scope path_scope.
+Delimit Scope path_scope with path.
+Bind Scope path_scope with path.
+
+Notation "p1 × p2" := (prod_eq2 p1 p2): path_scope.
+
+(** *** Other properties of paths over products. *)
+
+Lemma path_prod_inv {A B: UU} {x x': A} {y y': B} (p: x = x') (q: y = y')
+  : ! (p × q)%path = ((!p) × (!q))%path.
+Proof.
+  induction p.
+  induction q.
+  apply refl.
+Defined.
+
+
+(** *** Transport in a pointwise product of type families (Theorem 2.6.4 from
+the book). *)
 
 Definition transport_prod {Z: UU} (A B: Z → UU) {z w: Z} (p: z = w) (x: A z × B z):
    transport (λ z, A z × B z) p x = transport A p (pr1 x) ,, transport B p (pr2 x).
